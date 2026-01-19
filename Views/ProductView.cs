@@ -21,6 +21,7 @@ public class ProductView
         // Mientras no se regrese al menu principal
         while (!backToMainMenu)
         {
+            // Mostrar el menu de productos
             int option = InteractiveMenu.Show(
                 new InteractiveMenu.MenuArgs
                 {
@@ -34,6 +35,7 @@ public class ProductView
                 }
             );
 
+            // Manejamos la opción seleccionada
             switch (option)
             {
                 case -1:
@@ -84,8 +86,10 @@ public class ProductView
     {
         while (true)
         {
+            // Obtener todos los productos
             var products = _controller.GetAllProducts();
 
+            // Si no hay productos, mostrar mensaje y esperar a que el usuario presione Enter
             if (products.Count == 0)
             {
                 Console.WriteLine("No hay productos disponibles actualmente.");
@@ -94,11 +98,12 @@ public class ProductView
                 return;
             }
 
+            // Mostrar la lista de productos
             int selectedProductIdx = InteractiveMenu.Show(
                 new InteractiveMenu.MenuArgs
                 {
-                    MenuTitle = "Lista de Productos:",
-                    Choices = products.Select(p => $"{p.Name} ${p.Price} ({p.Stock})").ToArray(),
+                    MenuTitle = "Lista de Productos",
+                    Choices = products.Select(p => $"ID: {p.Id} | Nombre: {p.Name} | Precio: ${p.Price} | Stock: {p.Stock}").ToArray(),
                 }
             );
 
@@ -108,6 +113,7 @@ public class ProductView
                 break;
             }
 
+            // Obtener el producto seleccionado
             var selectedProduct = products[selectedProductIdx];
 
             // Manejar acciones sobre el producto seleccionado
@@ -125,9 +131,9 @@ public class ProductView
                 MenuTitle = $"Producto '{selectedProduct.Name}'",
                 Choices =
                 [
-                    "Actualizar producto",
+                    "Actualizar Producto",
                     "Eliminar Producto",
-                    "Volver al menu de productos",
+                    "Volver al listado de productos",
                 ],
             }
         );
