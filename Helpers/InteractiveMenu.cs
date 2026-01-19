@@ -126,6 +126,7 @@ public static class InteractiveMenu
         Console.Write(str);
     }
 
+    // Clase para pasar argumentos al menu interactivo
     public class MenuArgs
     {
         public string MenuTitle { get; set; } = "";
@@ -136,104 +137,102 @@ public static class InteractiveMenu
         public bool IsMainMenu { get; set; } = false;
     }
 
+    // Metodo principal para mostrar el menu interactivo
     public static int Show(MenuArgs args)
     {
-        if (
-            args
-            is not {
-                MenuTitle: var menuTitle,
-                Choices: var choices,
-                Pages: var pages,
-                CurrentPage: var currentPage,
-                RowsPerPage: var rowsPerPage,
-                IsMainMenu: var isMainMenu
-            }
-        )
+        if (args is not { MenuTitle: var title, Choices: var choices })
             return -999;
 
-        int width = 50;
-        int maxLengthChoices = Array.GetMax(Array.Map(choices, c => c.Length));
-        int maxLengthMenuTitle = Array.GetMax(
-            Array.Map(String.Split(menuTitle, '\n'), menuPart => menuPart.Length)
-        );
-
-        // Wao no me vuelvan a meter a diseñar menus de nuevo, despues de 2h llegue a esta conclusion:
-        // width - 5 para mantener un margen de 5 y que no ocurran desalineados medio raros
-        if (width - 5 <= maxLengthMenuTitle || width - 5 <= maxLengthChoices)
-        {
-            width =
-                maxLengthMenuTitle > maxLengthChoices
-                    ? maxLengthMenuTitle + 4
-                    : maxLengthChoices + 4;
-        }
-
+        int width = CalculateAutoWidth(title, choices);
         int selectedIndex = 0;
+        bool isPagination = args.Pages != null;
+        int totalPages = args.Pages?.Length ?? 0;
 
         while (true)
         {
-            DrawInteractiveMenu(menuTitle, choices, selectedIndex, width);
+            // Dibujamos el menu interactivo
+            DrawInteractiveMenu(title, choices, selectedIndex, width);
 
-            if (pages != null)
-            {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine($"Pagina {currentPage + 1}/{pages.Length}");
+            // Imprimimos el footer
+            PrintMenuFooterInfo(args.CurrentPage, totalPages, isPagination);
 
-                Console.ForegroundColor = Color.Warning;
-                if (!ShouldHideHints)
-                    Console.WriteLine(
-                        "\n\t\t\tNavegacion: [↑][←][↓][→] / [W][A][S][D]  -  Interaccion: [Espacio] / [⏎] Enter"
-                    );
-                Console.ForegroundColor = Color.Success;
-                Console.WriteLine(
-                    "\n\t\t\tPresiona [H] para mostrar/ocultar las sugerencias de navegacion/interaccion."
-                );
-                Console.ResetColor();
-                var navParams = new KeysArgs
-                {
-                    Key = Console.ReadKey(true).Key,
-                    SelectedIndex = selectedIndex,
-                    Choices = choices,
-                    Pagination = true,
-                    TotalPages = pages.Length,
-                    CurrentPage = currentPage,
-                    RowsPerPage = rowsPerPage,
-                    IsMainMenu = isMainMenu,
-                };
-                int? result = HandleInteractiveKeys(navParams);
-                selectedIndex = navParams.SelectedIndex;
-                if (result != null)
-                    return (int)result;
-            }
-            else
+            // Esperamos a que el usuario presione una tecla
+            var navParams = new KeysArgs
             {
-                Console.ForegroundColor = Color.Warning;
-                if (!ShouldHideHints)
-                    Console.WriteLine(
-                        "\n\t\t\tNavegacion: [↑][↓] / [W][S]\n\t\t\tInteraccion: [Espacio] / [⏎] Enter"
-                    );
-                Console.ForegroundColor = Color.Success;
-                Console.WriteLine(
-                    "\n\t\t\tPresiona [H] para mostrar/ocultar las sugerencias de navegacion/interaccion."
-                );
-                var navParams = new KeysArgs
-                {
-                    Key = Console.ReadKey(true).Key,
-                    SelectedIndex = selectedIndex,
-                    Choices = choices,
-                    Pagination = false,
-                    TotalPages = 0,
-                    CurrentPage = currentPage,
-                    RowsPerPage = rowsPerPage,
-                    IsMainMenu = isMainMenu,
-                };
-                int? result = HandleInteractiveKeys(navParams);
-                selectedIndex = navParams.SelectedIndex;
-                if (result != null)
-                    return (int)result;
-            }
+                Key = Console.ReadKey(true).Key,
+                SelectedIndex = selectedIndex,
+                Choices = choices,
+                Pagination = isPagination,
+                TotalPages = totalPages,
+                CurrentPage = args.CurrentPage,
+                RowsPerPage = args.RowsPerPage,
+                IsMainMenu = args.IsMainMenu,
+            };
+
+            // Manejamos la tecla presionada
+            int? result = HandleInteractiveKeys(navParams);
+
+            // Actualizamos el indice seleccionado
+            selectedIndex = navParams.SelectedIndex;
+
+            // Si se selecciono una opcion valida, la retornamos
+            if (result != null)
+                return result.Value;
         }
     }
 
+    // Calcula el ancho automatico del menu basado en el titulo y las opciones
+    private static int CalculateAutoWidth(string title, string[] choices)
+    {
+        // El ancho minimo sera 50
+        int width = 50;
+
+        // Obtener el maximo largo entre las opciones
+        int maxChoiceLen = Array.GetMax(Array.Map(choices, c => c.Length));
+
+        // Dividimos el titulo en lineas por si tiene saltos de linea
+        string[] splittedTitle = String.Split(title, '\n');
+        // Mapeamos a un nuevo array de enteros con el Length de cada linea
+        int[] titleLengths = Array.Map(splittedTitle, t => t.Length);
+        // Obtener el maximo largo entre las lineas del titulo
+        int maxTitleLen = Array.GetMax(titleLengths);
+
+        // Calculamos el ancho requerido
+        int requiredWidth = Math.Max(maxTitleLen, maxChoiceLen) + 4;
+
+        // 5 seria el margen de seguridad para evitar desalineados raros
+        if (width - 5 <= requiredWidth)
+        {
+            width = requiredWidth;
+        }
+
+        // Retornamos el ancho calculado
+        return width;
+    }
+
+    private static void PrintMenuFooterInfo(int currentPage, int totalPages, bool isPagination)
+    {
+        if (isPagination)
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine($"Pagina {currentPage + 1}/{totalPages}");
+        }
+
+        if (ShouldHideHints)
+            return;
+
+        Console.ForegroundColor = Color.Warning;
+        string navKeys = isPagination ? "[↑][←][↓][→] / [W][A][S][D]" : "[↑][↓] / [W][S]";
+
+        Console.WriteLine($"\n\t\t\tNavegacion: {navKeys}");
+        Console.WriteLine("\t\t\tInteraccion: [Espacio] / [⏎] Enter");
+
+        Console.ForegroundColor = Color.Success;
+        Console.WriteLine("\n\t\t\tPresiona [H] para mostrar/ocultar las sugerencias.");
+        Console.ResetColor();
+    }
+
+    // Clase para pasar argumentos al handler de teclas
     public class KeysArgs
     {
         public ConsoleKey Key { get; init; }
@@ -246,151 +245,151 @@ public static class InteractiveMenu
         public bool IsMainMenu { get; init; }
     }
 
-    public static int? HandleInteractiveKeys(KeysArgs p)
+    // Handler de las teclas interactivas
+    public static int? HandleInteractiveKeys(KeysArgs args)
     {
-        if (p == null)
+        // Si los args son nulos, retornamos null
+        if (args == null)
             return null;
 
-        if (p.Pagination)
+        return args.Key switch
         {
-            switch (p.Key)
-            {
-                case ConsoleKey.Escape:
-                {
-                    return -1;
-                }
-                case ConsoleKey.W:
-                case ConsoleKey.UpArrow:
-                    {
-                        p.SelectedIndex =
-                            (p.SelectedIndex == 0) ? p.Choices.Length - 1 : p.SelectedIndex - 1;
-                    }
-                    break;
-                case ConsoleKey.S:
-                case ConsoleKey.DownArrow:
-                    {
-                        p.SelectedIndex =
-                            (p.SelectedIndex == p.Choices.Length - 1) ? 0 : p.SelectedIndex + 1;
-                    }
-                    break;
-                case ConsoleKey.A:
-                case ConsoleKey.LeftArrow:
-                    {
-                        if (p.TotalPages > 1)
-                            return -2;
-                    }
-                    break;
-                case ConsoleKey.D:
-                case ConsoleKey.RightArrow:
-                    {
-                        if (p.TotalPages > 1)
-                            return -3;
-                    }
-                    break;
-                case ConsoleKey.H:
-                    ShouldHideHints = !ShouldHideHints;
-                    break;
+            // Navegacion Vertical
+            ConsoleKey.W or ConsoleKey.UpArrow => HandleVerticalMove(args, -1),
+            ConsoleKey.S or ConsoleKey.DownArrow => HandleVerticalMove(args, 1),
 
-                case ConsoleKey.Spacebar:
-                case ConsoleKey.Enter:
-                {
-                    Console.Clear();
-                    return (p.CurrentPage * p.RowsPerPage) + p.SelectedIndex;
-                }
-            }
-        }
+            // Navegacion Horizontal (Solo Paginacion)
+            ConsoleKey.A or ConsoleKey.LeftArrow when args.Pagination => HandlePageMove(args, -1), // -1 le indicara que es izquierda
+            ConsoleKey.D or ConsoleKey.RightArrow when args.Pagination => HandlePageMove(args, 1), // 1 le indicara que es derecha
+
+            // Acciones de Confirmacion / Salida / Hints
+            ConsoleKey.Spacebar or ConsoleKey.Enter => HandleConfirm(args),
+            ConsoleKey.Escape => HandleExit(args),
+            ConsoleKey.H => ToggleHints(),
+
+            // Default: ignorar cualquier otra tecla
+            _ => null,
+        };
+    }
+
+    // Handler de movimiento vertical
+    private static int? HandleVerticalMove(KeysArgs args, int direction)
+    {
+        // direction: -1 (Arriba), 1 (Abajo)
+        // Si direction es negativo, movemos hacia arriba
+        if (direction < 0)
+            args.SelectedIndex =
+                (args.SelectedIndex == 0) ? args.Choices.Length - 1 : args.SelectedIndex - 1;
+        // Si direction es positivo, movemos hacia abajo
         else
-        {
-            switch (p.Key)
-            {
-                case ConsoleKey.Escape:
-                {
-                    if (p.IsMainMenu)
-                    {
-                        int selectedChoice = Show(
-                            new MenuArgs
-                            {
-                                MenuTitle = "Estas seguro que deseas salir?",
-                                Choices = ["Si, deseo salir.", "No, no quiero salir ahora."],
-                            }
-                        );
+            args.SelectedIndex =
+                (args.SelectedIndex == args.Choices.Length - 1) ? 0 : args.SelectedIndex + 1;
 
-                        if (selectedChoice == 0)
-                        {
-                            Console.Clear();
-                            return -1;
-                        }
-                    }
-                    else
-                        return -1;
-
-                    break;
-                }
-                case ConsoleKey.W:
-                case ConsoleKey.UpArrow:
-                    {
-                        p.SelectedIndex =
-                            (p.SelectedIndex == 0) ? p.Choices.Length - 1 : p.SelectedIndex - 1;
-                    }
-                    break;
-
-                case ConsoleKey.S:
-                case ConsoleKey.DownArrow:
-                    {
-                        p.SelectedIndex =
-                            (p.SelectedIndex == p.Choices.Length - 1) ? 0 : p.SelectedIndex + 1;
-                    }
-                    break;
-
-                case ConsoleKey.H:
-                    ShouldHideHints = !ShouldHideHints;
-                    break;
-
-                case ConsoleKey.Spacebar:
-                case ConsoleKey.Enter:
-                {
-                    while (Console.KeyAvailable)
-                        Console.ReadKey(true); // limpia el buffer
-                    Console.Clear();
-                    return p.SelectedIndex;
-                }
-            }
-        }
-
+        // Sino se selecciono ninguna opcion valida, retornamos null para seguir el flujo normal
         return null;
     }
 
+    // Handler de cambio de pagina
+    private static int? HandlePageMove(KeysArgs args, int direction)
+    {
+        // direction: -2 (Izquierda), -3 (Derecha)
+        int moveToDirection = direction < 0 ? -2 : -3;
+
+        // Si hay mas de una pagina, retornamos codigos especiales para que el padre maneje el cambio
+        return args.TotalPages > 1 ? moveToDirection : null;
+    }
+
+    // Handler de la confirmacion de seleccion
+    private static int HandleConfirm(KeysArgs args)
+    {
+        // Limpiamos buffer por si acaso
+        while (Console.KeyAvailable)
+            Console.ReadKey(true);
+        Console.Clear();
+
+        // Retornamos el indice seleccionado, ajustado si es paginado
+        return args.Pagination
+            ? (args.CurrentPage * args.RowsPerPage) + args.SelectedIndex
+            : args.SelectedIndex;
+    }
+
+    // Handler de la salida del menu
+    private static int? HandleExit(KeysArgs args)
+    {
+        // Si no es menú principal o es paginación simple, salimos directo (-1)
+        if (!args.IsMainMenu || args.Pagination)
+            return -1;
+
+        // Confirmacion antes de cerrar el programa
+        int selectedChoice = Show(
+            new MenuArgs
+            {
+                MenuTitle = "Estas seguro que deseas salir?",
+                Choices = ["Si, deseo salir.", "No, no quiero salir ahora."],
+            }
+        );
+
+        if (selectedChoice == 0)
+        {
+            Console.Clear();
+            return -1;
+        }
+
+        // Si llego hasta aqui, quiere decir que cancelo la salida.
+        return null;
+    }
+
+    // Handler de toggle de hints
+    private static int? ToggleHints()
+    {
+        // Alternamos el estado de los hints
+        ShouldHideHints = !ShouldHideHints;
+        return null;
+    }
+
+    // Helper para paginar un array
     public static T[] GetPagination<T>(T[] array, int page = 1, int rowsPerPage = 15)
     {
+        // Calculamos el total de paginas
         int totalPages = array.Length / rowsPerPage;
 
+        // Si hay sobran valores, agregamos una pagina mas para mostrarlos
         if (array.Length % rowsPerPage != 0)
             totalPages++;
 
+        // Validamos los parametros
         if (array == null || array.Length == 0 || page < 1 || page > totalPages)
             return [];
 
         // Si la pagina es 1, el offset es 0, si es 2, el offset es rowsPerPage, etc.
+        // De esa forma con la utilidad TakeFirstN podemos tomar los valores correctos desde N hasta M indice del array
         int offset = rowsPerPage * (page - 1);
 
         return Array.TakeFirstN(array, offset, offset + rowsPerPage);
     }
 
+    // Helper para centrar texto dentro de un ancho dado
     private static string CenterText(string textToCenter, int widthOfMenu)
     {
+        // Como funciona?
         // "               Hola mundo               " => 40 caracteres en total
         // "Hola mundo" => 10 caracteres
         // 40-10 = 30 caracteres de espacios en blanco
         // 30/2 = 15 caracteres de ambos lados en blanco
         // 40-10-caracteresIzquierda = 15 (si fuera impar se ajustaria mejor)
+
+        // Calculamos los espacios en blanco necesarios a la izquierda y derecha
         int whiteSpacesBetweenTextLeft = (widthOfMenu - textToCenter.Length) / 2;
 
+        // Aseguramos que no sea negativo
         if (whiteSpacesBetweenTextLeft < 0)
             whiteSpacesBetweenTextLeft = 0;
 
+        // Calculamos los espacios en blanco a la derecha
         int whiteSpacesBetweenTextRight =
             widthOfMenu - textToCenter.Length - whiteSpacesBetweenTextLeft;
 
+        // Rellenamos espacios en blanco a ambos lados y retornamos el texto centrado
         return String.fillRight(" ", whiteSpacesBetweenTextLeft)
             + textToCenter
             + String.fillRight(" ", whiteSpacesBetweenTextRight);
