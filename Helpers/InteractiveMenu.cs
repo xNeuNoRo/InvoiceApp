@@ -12,41 +12,61 @@ public static class InteractiveMenu
     )
     {
         Console.Clear();
+
+        // Dividimos el ancho en dos mitades, izquierda y derecha
         int leftHalf = width / 2;
         int rightHalf = width - leftHalf;
+
+        // Dividimos el titulo del menu en lineas por si tiene saltos de linea
         string[] menuTitleSplitted = String.Split(menuTitle, '\n');
 
+        // Calculamos el maximo largo entre el titulo y las opciones
         int maxTitleLength = Array.GetMax(Array.Map(menuTitleSplitted, title => title.Length));
         int maxChoicesLength = Array.GetMax(Array.Map(choices, c => c.Length));
 
+        // Decidimos cual es el maximo largo entre los dos
         int maxLengthInMenu =
             maxTitleLength >= maxChoicesLength ? maxTitleLength : maxChoicesLength;
 
-        int calculatedTabsVal =
-            maxLengthInMenu > 70 ? 2
-            : maxLengthInMenu > 60 ? 3
-            : 4;
+        // Calculamos las tabulaciones dependiendo del maximo largo calculado previamente
+        int calculatedTabsVal = 4; // Default 4 tabs
 
+        // Ajuste dinamico de las tabs dependiendo del largo del menu calculado previamente
+        if (maxLengthInMenu > 70)
+            calculatedTabsVal = 2;
+        else if (maxLengthInMenu > 60)
+            calculatedTabsVal = 3;
+
+        // Simplemente rellenamos con las tabs calculadas. (Con una tab ya por default que incluye el menu)
+        // Serian por ej: 4+1 o 3+1 o 2+1 tabs dependiendo del largo del menu
         string calculatedTabs = String.fillRight("\t", calculatedTabsVal, '\t');
 
         // Espacios para alinear el menu
         Console.WriteLine("\n\n");
+        // Ajustamos el background del menu
+        Console.BackgroundColor = ConsoleColor.Black;
 
-        // Header
+        // Imprimimos el borde izquierdo del menu de color azul
         WriteColorLines(
             $"{calculatedTabs}╭" + String.fillRight("━", leftHalf, '━'),
             ConsoleColor.Blue
         );
+        // Imprimimos el borde derecho del menu de color rojo
         WriteColorLines(String.fillRight("━", rightHalf, '━') + "╮", ConsoleColor.Red);
 
-        // Menu Title
+        // Iteramos entre todos los posibles saltos de linea del titulo del menu
         foreach (string menuTitleParsed in menuTitleSplitted)
         {
+            // Si el titulo no es vacio
             if (!string.IsNullOrWhiteSpace(menuTitleParsed))
             {
+                // Centramos el texto
                 string centeredText = CenterText(menuTitleParsed, width);
+
+                // Dividimos el texto en dos mitades para colorearlas diferente
                 int splitIndex = centeredText.Length / 2;
 
+                // Imprimimos la primera mitad en azul y la segunda en rojo
                 WriteColorLines(
                     $"\n{calculatedTabs}┃" + String.Substring(centeredText, 0, splitIndex),
                     ConsoleColor.Blue
@@ -55,6 +75,7 @@ public static class InteractiveMenu
             }
             else
             {
+                // Si el titulo es vacio, imprimimos una linea vacia con los bordes
                 WriteColorLines(
                     String.fillRight($"\n{calculatedTabs}┃", width + 2),
                     ConsoleColor.Blue
@@ -63,44 +84,49 @@ public static class InteractiveMenu
             }
         }
 
-        // Footer
+        // Imprimimos el footer del titulo, dividiendolo en dos mitades para colorearlas diferente
         WriteColorLines(
             $"\n{calculatedTabs}┃" + String.fillRight("━", leftHalf, '━'),
             ConsoleColor.Blue
         );
         WriteColorLines(String.fillRight("━", rightHalf, '━') + "┃\n", ConsoleColor.Red);
 
-        // Opciones
+        // Iteramos entre todas las opciones
         for (int i = 0; i < choices.Length; i++)
         {
+            // Si es la opcion la cual esta haciendo "hover" el selector
             if (i == selectedIndex)
             {
+                // Cambiamos los colores para resaltar la opcion seleccionada
                 Console.ForegroundColor = ConsoleColor.White;
                 Console.BackgroundColor = Color.Selector;
             }
+            // En caso contrario
             else
             {
+                // Restauramos los colores por defecto
                 Console.ForegroundColor = ConsoleColor.Gray;
                 Console.BackgroundColor = ConsoleColor.Black;
             }
 
-            // Choices
+            // Imprimimos la opcion centrada dentro del menu
             Console.WriteLine($"{calculatedTabs}┃" + CenterText(choices[i], width) + "┃");
         }
 
-        // Choices Footer
+        // Imprimimos el borde inferior del menu
         Console.BackgroundColor = ConsoleColor.Black;
         Console.WriteLine($"{calculatedTabs}╰" + String.fillRight("━", width, '━') + "╯");
         Console.ResetColor();
     }
 
+    // Simple helper para evitar algo de boilerplate al escribir en colores
     private static void WriteColorLines(string str, ConsoleColor color)
     {
         Console.ForegroundColor = color;
         Console.Write(str);
     }
 
-    public class InteractiveMenuParams
+    public class MenuArgs
     {
         public string MenuTitle { get; set; } = "";
         public string[] Choices { get; set; } = [];
@@ -110,10 +136,10 @@ public static class InteractiveMenu
         public bool IsMainMenu { get; set; } = false;
     }
 
-    public static int Show(InteractiveMenuParams menuParams)
+    public static int Show(MenuArgs args)
     {
         if (
-            menuParams
+            args
             is not {
                 MenuTitle: var menuTitle,
                 Choices: var choices,
@@ -162,7 +188,7 @@ public static class InteractiveMenu
                     "\n\t\t\tPresiona [H] para mostrar/ocultar las sugerencias de navegacion/interaccion."
                 );
                 Console.ResetColor();
-                var navParams = new InteractiveKeysParams
+                var navParams = new KeysArgs
                 {
                     Key = Console.ReadKey(true).Key,
                     SelectedIndex = selectedIndex,
@@ -189,7 +215,7 @@ public static class InteractiveMenu
                 Console.WriteLine(
                     "\n\t\t\tPresiona [H] para mostrar/ocultar las sugerencias de navegacion/interaccion."
                 );
-                var navParams = new InteractiveKeysParams
+                var navParams = new KeysArgs
                 {
                     Key = Console.ReadKey(true).Key,
                     SelectedIndex = selectedIndex,
@@ -208,7 +234,7 @@ public static class InteractiveMenu
         }
     }
 
-    public class InteractiveKeysParams
+    public class KeysArgs
     {
         public ConsoleKey Key { get; init; }
         public int SelectedIndex { get; set; }
@@ -220,7 +246,7 @@ public static class InteractiveMenu
         public bool IsMainMenu { get; init; }
     }
 
-    public static int? HandleInteractiveKeys(InteractiveKeysParams p)
+    public static int? HandleInteractiveKeys(KeysArgs p)
     {
         if (p == null)
             return null;
@@ -282,7 +308,7 @@ public static class InteractiveMenu
                     if (p.IsMainMenu)
                     {
                         int selectedChoice = Show(
-                            new InteractiveMenuParams
+                            new MenuArgs
                             {
                                 MenuTitle = "Estas seguro que deseas salir?",
                                 Choices = ["Si, deseo salir.", "No, no quiero salir ahora."],

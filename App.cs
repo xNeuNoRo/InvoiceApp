@@ -7,7 +7,7 @@ public class App
     public App()
     {
         var selectedChoice = InteractiveMenu.Show(
-            new InteractiveMenu.InteractiveMenuParams
+            new InteractiveMenu.MenuArgs
             {
                 MenuTitle = "Seleccione una opcion:",
                 Choices = ["Crear factura", "Ver facturas", "Salir"],
