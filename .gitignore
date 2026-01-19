@@ -1,2 +1,7 @@
+# Ignorar carpetas de compilacion
 obj
 bin
+
+# Ignorar archivos de datos JSON
+invoices.json
+products.json

@@ -6,7 +6,10 @@ static class Program
 {
     public static void Main(string[] args)
     {
+        // Inicializar la aplicación
         var app = new App();
-        Console.WriteLine("Iniciando la app de facturacion...");
+
+        // Ejecutar la aplicación
+        app.Run();
     }
 }
