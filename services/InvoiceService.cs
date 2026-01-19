@@ -3,7 +3,7 @@ using InvoiceApp.Domain;
 
 namespace InvoiceApp.Services;
 
-public class InvoiceService
+public class InvoiceService: IInvoiceService
 {
     private readonly IInvoiceRepository _invoiceRepository;
     private readonly IProductRepository _productRepository;

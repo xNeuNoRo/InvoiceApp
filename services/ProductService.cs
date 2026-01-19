@@ -3,7 +3,7 @@ using InvoiceApp.Domain;
 
 namespace InvoiceApp.Services;
 
-public class ProductService
+public class ProductService : IProductService
 {
     private readonly IProductRepository _repository;
 
@@ -68,7 +68,12 @@ public class ProductService
         _repository.UpdateById(productId, existingProduct);
     }
 
-    private static void UpdateProductValues(Product product, string? name, decimal? price, int? stock)
+    private static void UpdateProductValues(
+        Product product,
+        string? name,
+        decimal? price,
+        int? stock
+    )
     {
         // Actualizamos solo si el nomnbre no es nulo o vacio
         if (!string.IsNullOrEmpty(name))
