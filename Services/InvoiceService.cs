@@ -3,7 +3,7 @@ using InvoiceApp.Domain;
 
 namespace InvoiceApp.Services;
 
-public class InvoiceService: IInvoiceService
+public class InvoiceService : IInvoiceService
 {
     private readonly IInvoiceRepository _invoiceRepository;
     private readonly IProductRepository _productRepository;
@@ -70,6 +70,45 @@ public class InvoiceService: IInvoiceService
         _productRepository.UpdateById(productId, product); // Y el producto por su stock modificado
     }
 
+    public void ModifyProductQuantityFromInvoice(int invoiceId, int productId, int newQuantity)
+    {
+        // Obtenemos la factura y el producto
+        var invoice = _invoiceRepository.FindById(invoiceId);
+        var product = _productRepository.FindById(productId);
+
+        // Verificamos que existan
+        if (invoice == null)
+            throw new InvalidOperationException("Factura no encontrada");
+        if (product == null)
+            throw new InvalidOperationException("Producto no encontrado");
+
+        // Buscamos el item correspondiente en la factura
+        var item = invoice.Items.FirstOrDefault(invoiceItem => invoiceItem.Product.Id == productId);
+        if (item == null)
+            throw new InvalidOperationException("El producto no se encuentra en la factura");
+
+        // Calculamos la diferencia de cantidad
+        int quantityDifference = newQuantity - item.Quantity;
+
+        // Ajustamos el stock del producto segun la diferencia
+        if (quantityDifference > 0)
+        {
+            product.DecreaseStock(quantityDifference);
+        }
+        else if (quantityDifference < 0)
+        {
+            product.IncreaseStock(-quantityDifference);
+        }
+
+        // Modificamos la cantidad del item en la factura
+        item.UpdateQuantity(newQuantity);
+        item.UpdateProduct(product); // Para sincronizar el stock del producto en el item
+
+        // Actualizamos la factura y el producto en sus respectivos repositorios
+        _invoiceRepository.UpdateById(invoiceId, invoice); // La factura por el item modificado
+        _productRepository.UpdateById(productId, product); // Y el producto por su stock modificado
+    }
+
     public void RemoveProductFromInvoice(int invoiceId, int productId)
     {
         // Obtenemos la factura y el producto
@@ -106,6 +145,16 @@ public class InvoiceService: IInvoiceService
     public List<Invoice> GetAllInvoices()
     {
         return _invoiceRepository.FindAll();
+    }
+
+    public Product? GetProductById(int productId)
+    {
+        return _productRepository.FindById(productId);
+    }
+
+    public List<Product> GetAllProducts()
+    {
+        return _productRepository.FindAll();
     }
 
     public void DeleteInvoice(int invoiceId)
