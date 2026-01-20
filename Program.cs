@@ -1,9 +1,15 @@
-﻿namespace Asignacion1;
+﻿using InvoiceApp;
+
+namespace Asignacion1;
 
 static class Program
 {
     public static void Main(string[] args)
     {
-        Console.WriteLine("Iniciando la app de facturacion...");
+        // Inicializar la aplicación
+        var app = new App();
+
+        // Ejecutar la aplicación
+        app.Run();
     }
 }

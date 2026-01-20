@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace InvoiceApp.Domain;
 
 public class Invoice
@@ -9,8 +11,6 @@ public class Invoice
     public decimal Tax { get; set; } = 0.15m; // Impuesto por defecto del 15%
     public decimal Total => CalculateTotalPrice();
 
-    
-
     public Invoice(int id)
     {
         // Validamos el ID antes de crear la factura
@@ -20,6 +20,16 @@ public class Invoice
         }
 
         Id = id;
+    }
+
+    // Solamente para deserializacion JSON de System.Text.Json literalmente
+    [JsonConstructor]
+    public Invoice(int id, DateTime date, List<InvoiceItem> items, decimal tax)
+    {
+        Id = id;
+        Date = date;
+        Items = items;
+        Tax = tax;
     }
 
     private decimal CalculateSubtotalPrice()
