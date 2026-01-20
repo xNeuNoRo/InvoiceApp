@@ -292,7 +292,7 @@ public static class InteractiveMenu
     // Handler de cambio de pagina
     private static int? HandlePageMove(KeysArgs args, int direction)
     {
-        // direction: -2 (Izquierda), -3 (Derecha)
+        // direction: -1 (Izquierda), 1 (Derecha) => retorna -2 (Izquierda) o -3 (Derecha)
         int moveToDirection = direction < 0 ? -2 : -3;
 
         // Si hay mas de una pagina, retornamos codigos especiales para que el padre maneje el cambio

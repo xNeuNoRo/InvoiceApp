@@ -75,7 +75,7 @@ public class ProductService : IProductService
         int? stock
     )
     {
-        // Actualizamos solo si el nomnbre no es nulo o vacio
+        // Actualizamos solo si el nombre no es nulo o vacio
         if (!string.IsNullOrEmpty(name))
         {
             product.UpdateName(name);
